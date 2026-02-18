@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           pinataContent:  json,
           pinataOptions:  { cidVersion: 1 },
-          pinataMetadata: { name: name || 'wallad-json' },
+          pinataMetadata: { name: name || 'wallmark-json' },
         }),
       })
 
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     pinataForm.append('file', file, file.name)
     pinataForm.append('pinataOptions', JSON.stringify({ cidVersion: 1 }))
     pinataForm.append('pinataMetadata', JSON.stringify({
-      name: `wallad-${type}-${Date.now()}`
+      name: `wallmark-${type}-${Date.now()}`
     }))
 
     const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {

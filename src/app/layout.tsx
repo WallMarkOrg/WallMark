@@ -4,11 +4,11 @@ import { Navbar }         from '@/components/Navbar'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title:       'Wallad — Physical Wall Ad Marketplace',
+  title:       'WallMark — Physical Wall Ad Marketplace',
   description: 'Rent physical walls for advertising with trustless BNB Chain escrow',
   keywords:    ['advertising', 'web3', 'bnb chain', 'physical ads', 'escrow'],
   openGraph: {
-    title:       'Wallad',
+    title:       'WallMark',
     description: 'Trustless physical ad marketplace on BNB Chain',
     type:        'website',
   },

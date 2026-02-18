@@ -70,12 +70,16 @@ export function WallMap({
     <MC
       center={center}
       zoom={zoom}
+      minZoom={2}
+      maxBounds={[[-90, -180], [90, 180]]}
+      maxBoundsViscosity={1.0}
       className="w-full h-full rounded-xl z-0"
       style={{ background: '#1a1a27' }}
     >
       <TL
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+        noWrap={true}
       />
       {walls.map((wall) => (
         <MK

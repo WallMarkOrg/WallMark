@@ -24,10 +24,10 @@ export const bscTestnetChain = defineChain({
 })
 
 const WC_PROJECT_ID =
-  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'wallad-dev-placeholder'
+  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'wallmark-dev-placeholder'
 
 export const wagmiConfig = getDefaultConfig({
-  appName:     'Wallad — Physical Wall Ad Marketplace',
+  appName:     'WallMark — Physical Wall Ad Marketplace',
   projectId:   WC_PROJECT_ID,
   chains:      [bscTestnetChain, bsc],
   ssr:         true,

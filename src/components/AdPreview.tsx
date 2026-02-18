@@ -70,7 +70,7 @@ export function AdPreview({
     const canvas = canvasRef.current
     if (!canvas) return
     const link    = document.createElement('a')
-    link.download = 'wallad-preview.png'
+    link.download = 'wallmark-preview.png'
     link.href     = canvas.toDataURL('image/png')
     link.click()
   }
