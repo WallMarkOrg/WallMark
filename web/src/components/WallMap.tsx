@@ -23,8 +23,8 @@ export function WallMap({
   walls,
   selectedWallId,
   onWallClick,
-  center = [40.7128, -74.006], // default: NYC
-  zoom   = 12,
+  center = [20, 0], // Changed from NYC to a global center
+  zoom   = 2,        // Changed from 12 to 2 (World View)
 }: WallMapProps) {
   const [isClient,  setIsClient]  = useState(false)
   const [MapComponents, setMapComponents] = useState<any>(null)

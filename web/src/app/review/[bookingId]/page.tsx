@@ -9,7 +9,7 @@ import { ipfsImageUrl }          from '@/lib/ipfs'
 import { keccak256 }             from 'viem'
 import { EXPLORER_BASE }         from '@/lib/contract'
 import { BookingStatus }         from '@/components/BookingStatus'
-import { CheckCircle, XCircle, Clock, ExternalLink, Loader2, AlertTriangle, Shield, Image as ImageIcon, Video } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, ExternalLink, Loader2, AlertTriangle, Shield, Image as ImageIcon, Video, Star } from 'lucide-react'
 import { formatBnb }             from '@/lib/pricing'
 import { timeUntil }             from '@/lib/utils'
 
@@ -17,7 +17,8 @@ export default function ReviewPage() {
   const { bookingId }          = useParams<{ bookingId: string }>()
   const router                 = useRouter()
   const { address }            = useAccount()
-
+  
+  const [rating, setRating]     = useState(5)
   const [booking,  setBooking]  = useState<Booking | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState('')
@@ -53,7 +54,11 @@ export default function ReviewPage() {
     fetch(`/api/bookings/${booking.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ txHashSettle: hash, status: newStatus }),
+      body: JSON.stringify({ 
+        txHashSettle: hash, 
+        status: newStatus,
+        rating: approveSuccess ? rating : null 
+      }),
     }).then(() => {
       if (rejectSuccess && booking.proof) {
         fetch(`/api/proofs/${booking.id}`, {
@@ -70,14 +75,14 @@ export default function ReviewPage() {
     if (!booking?.chainBookingId) return
     approve(booking.chainBookingId as `0x${string}`)
 
-    // Mark proof as approved in DB
-    if (booking.proof) {
-      fetch(`/api/proofs/${booking.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision: 'approved' }),
-      })
-    }
+    // Optimistic DB update for the rating (handled formally in the useEffect sync)
+    fetch(`/api/bookings/${booking.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        rating: rating 
+      }),
+    })
   }
 
   const handleReject = () => {
@@ -316,10 +321,34 @@ export default function ReviewPage() {
               <p className="text-xs text-slate-500">Redirecting to dashboard...</p>
             </div>
           ) : booking.status === 'PROOF_SUBMITTED' && isAdvertiser ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-xs text-slate-500 text-center">
-                You have final authority. Approve to release funds, reject for a refund.
+                Review the proof above. You have final authority to release funds or request a refund.
               </p>
+
+              {/* Interactive Rating Selector */}
+              <div className="bg-surface-raised p-4 rounded-xl border border-surface-border">
+                <label className="label text-[10px] text-slate-500 mb-2 block uppercase tracking-wider font-bold">Rate the installation</label>
+                <div className="flex justify-between px-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setRating(star)}
+                      className="group relative transition-transform active:scale-90"
+                    >
+                      <Star 
+                        size={28} 
+                        className={`transition-all ${
+                          rating >= star 
+                            ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.3)]' 
+                            : 'text-slate-700 hover:text-slate-500'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-600 mt-3 text-center italic">Select stars before approving</p>
+              </div>
 
               {/* Approve */}
               <button
@@ -331,7 +360,7 @@ export default function ReviewPage() {
                   ? <><Loader2 size={15} className="animate-spin" /> Confirm in wallet...</>
                   : isConfirming && !rejectConfirming
                   ? <><Loader2 size={15} className="animate-spin" /> Confirming...</>
-                  : <><CheckCircle size={15} /> Approve Installation</>
+                  : <><CheckCircle size={15} /> Approve & Release Funds</>
                 }
               </button>
 

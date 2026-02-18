@@ -121,7 +121,7 @@ model Booking {
   // State (mirrored from contract by event indexer)
   status          BookingStatus @default(PENDING_PAYMENT)
   disputeDeadline DateTime?
-
+  rating          Int?
   // Media
   artworkCid  String?   // IPFS CID of banner artwork
   previewCid  String?   // IPFS CID of generated composite preview

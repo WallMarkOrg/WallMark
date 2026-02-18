@@ -30,7 +30,7 @@ export function Navbar() {
             <span className="text-brand font-bold text-sm">W</span>
           </div>
           <span className="font-bold text-slate-100 text-lg tracking-tight">
-            Wall<span className="text-brand">ad</span>
+            Wall<span className="text-brand">Mark</span>
           </span>
         </Link>
 
