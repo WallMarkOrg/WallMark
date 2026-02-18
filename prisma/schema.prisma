@@ -1,0 +1,190 @@
+// Wallad — Prisma Schema
+// Database: PostgreSQL (Neon, Supabase, or self-hosted)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum WallStatus {
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT   // created, not yet funded on-chain
+  FUNDED            // escrow active
+  PROOF_SUBMITTED   // installer submitted proof
+  APPROVED          // advertiser approved, funds released
+  REJECTED          // advertiser rejected, funds refunded
+  EXPIRED           // installer missed deadline, advertiser refunded
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  displayName   String?
+  email         String?
+  isOwner       Boolean  @default(false)
+  isInstaller   Boolean  @default(false)
+
+  walls         Wall[]
+  bookings      Booking[]    @relation("AdvertiserBookings")
+  installations Booking[]    @relation("InstallerBookings")
+  proofs        Proof[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([walletAddress])
+}
+
+model Wall {
+  id          String     @id @default(cuid())
+  ownerId     String
+  owner       User       @relation(fields: [ownerId], references: [id])
+
+  // Location
+  addressText String
+  city        String
+  country     String     @default("US")
+  latitude    Float
+  longitude   Float
+
+  // Dimensions (set by CV pipeline, locked after first approval)
+  areaSqft          Float?
+  widthFt           Float?
+  heightFt          Float?
+  dimensionsLocked  Boolean  @default(false)
+  referencePhotoCid String?   // IPFS CID of onboarding reference photo
+  wallCornersJson   String?   // JSON array of 4 normalized [x,y] corners for preview
+  cvConfidence      Float?    // 0.0–1.0
+
+  // Pricing
+  pricePerSqftDay String    // stored as string to preserve decimal precision (in BNB)
+  visibilityTier  Int       @default(3) // 1–5
+
+  // Media
+  photoCids   String[]   // IPFS CIDs of wall photos
+  title       String
+  description String?
+
+  status   WallStatus @default(PENDING_REVIEW)
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([city])
+  @@index([status])
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+
+  // Participants
+  advertiserId String
+  advertiser   User          @relation("AdvertiserBookings", fields: [advertiserId], references: [id])
+  wallId       String
+  wall         Wall          @relation(fields: [wallId], references: [id])
+  installerId  String?
+  installer    User?         @relation("InstallerBookings", fields: [installerId], references: [id])
+
+  // Schedule
+  startDate DateTime
+  endDate   DateTime
+
+  // Pricing snapshot (locked at booking time, never mutated)
+  areaSqft        Float
+  pricePerSqftDay String
+  visibilityMult  Float
+  totalBnb        String   // human-readable BNB string e.g. "0.042500"
+
+  // On-chain anchors
+  chainBookingId  String?  @unique // bytes32 hex: 0x...
+  metadataHash    String?          // keccak256 of canonical booking JSON
+  txHashFund      String?          // fundBooking() tx
+  txHashProof     String?          // submitProof() tx
+  txHashSettle    String?          // approve/reject/timeout tx
+  chainId         Int      @default(97)
+
+  // State (mirrored from contract by event indexer)
+  status          BookingStatus @default(PENDING_PAYMENT)
+  disputeDeadline DateTime?
+
+  // Media
+  artworkCid  String?   // IPFS CID of banner artwork
+  previewCid  String?   // IPFS CID of generated composite preview
+  warpMatrix  String?   // JSON 3x3 homography matrix for preview
+
+  proof Proof?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([advertiserId])
+  @@index([wallId])
+  @@index([status])
+  @@index([chainBookingId])
+}
+
+model Proof {
+  id        String  @id @default(cuid())
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  installerId String
+  installer   User   @relation(fields: [installerId], references: [id])
+
+  // Media (IPFS CIDs)
+  beforePhotoCids String[]
+  afterPhotoCids  String[]
+  videoCid        String?
+
+  // Optional GPS
+  gpsLat       Float?
+  gpsLng       Float?
+  gpsAccuracyM Float?
+
+  // On-chain proof anchor
+  proofPackageCid  String   // IPFS CID of JSON manifest
+  proofContentHash String   // 0x + SHA-256 hex of manifest content
+  submittedAt      DateTime @default(now())
+
+  // Advertiser decision
+  decision            String?   // "approved" | "rejected"
+  rejectionReason     String?
+  rejectionReasonHash String?
+  decidedAt           DateTime?
+
+  @@index([bookingId])
+  @@index([installerId])
+}
+
+// Append-only log of on-chain events (written by chain indexer)
+model ChainEvent {
+  id           BigInt   @id @default(autoincrement())
+  chainId      Int
+  contractAddr String
+  txHash       String
+  blockNumber  BigInt
+  logIndex     Int
+  eventName    String
+  bookingIdHex String?
+  rawData      Json
+
+  indexedAt DateTime @default(now())
+
+  @@unique([chainId, txHash, logIndex])
+  @@index([bookingIdHex])
+}

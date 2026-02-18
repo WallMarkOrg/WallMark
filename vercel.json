@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/chain/sync",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
