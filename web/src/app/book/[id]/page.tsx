@@ -9,6 +9,7 @@ import { AdPreview }             from '@/components/AdPreview'
 import type { Wall }             from '@/types'
 import { ipfsImageUrl }          from '@/lib/ipfs'
 import { Calendar, Upload, Image as ImageIcon, ArrowRight, Loader2, Info } from 'lucide-react'
+import { useBnbPrice }           from '@/hooks/useBnbPrice'
 
 type BookStep = 'dates' | 'artwork' | 'preview' | 'confirm'
 
@@ -16,6 +17,7 @@ export default function BookPage() {
   const { id }               = useParams<{ id: string }>()
   const router               = useRouter()
   const { isConnected, address } = useAccount()
+  const { convert }          = useBnbPrice()
 
   const [wall,      setWall]      = useState<Wall | null>(null)
   const [loading,   setLoading]   = useState(true)
@@ -194,9 +196,16 @@ export default function BookPage() {
                     Tier {wall.visibilityTier} ({VISIBILITY_MULTIPLIERS[wall.visibilityTier]?.mult}×)
                   </span>
                 </div>
-                <div className="border-t border-surface-border pt-2 flex justify-between font-bold">
-                  <span className="text-slate-300">Total</span>
-                  <span className="text-brand text-lg">{pricing.totalBnb} BNB</span>
+                
+                {/* Total with USD translation */}
+                <div className="border-t border-surface-border pt-2 flex flex-col items-end">
+                  <div className="flex justify-between w-full font-bold">
+                    <span className="text-slate-300">Total</span>
+                    <span className="text-brand text-lg">{pricing.totalBnb} BNB</span>
+                  </div>
+                  <div className="text-xs text-slate-500 font-medium">
+                    ≈ {convert(pricing.totalBnb)} USD
+                  </div>
                 </div>
               </div>
             )}
@@ -313,7 +322,17 @@ export default function BookPage() {
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between py-2 border-b border-surface-border last:border-0 text-sm">
                   <span className="text-slate-500">{k}</span>
-                  <span className={`font-medium ${k === 'Total' ? 'text-brand' : 'text-slate-200'} font-mono text-xs`}>{v}</span>
+                  <div className="text-right">
+                    <span className={`font-medium ${k === 'Total' ? 'text-brand' : 'text-slate-200'} font-mono text-xs`}>
+                        {v}
+                    </span>
+                    {/* Add USD translation only for the Total row */}
+                    {k === 'Total' && pricing && (
+                        <span className="block text-[10px] text-slate-500 font-sans font-bold">
+                            ≈ {convert(pricing.totalBnb)} USD
+                        </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

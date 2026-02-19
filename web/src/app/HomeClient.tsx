@@ -42,7 +42,7 @@ export function HomeClient() {
         {/* Header */}
         <div className="p-4 border-b border-surface-border">
           <h1 className="font-bold text-lg text-slate-100">
-            Wall<span className="text-brand">ad</span>
+            Wall<span className="text-brand">Mart</span>
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
             Trustless physical ad marketplace on BNB Chain
