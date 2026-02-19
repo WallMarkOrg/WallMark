@@ -5,18 +5,24 @@ import { MapPin, Maximize2, Star } from 'lucide-react'
 import { Wall }              from '@/types'
 import { ipfsImageUrl }      from '@/lib/ipfs'
 import { cn }                from '@/lib/utils'
+import { useBnbPrice }       from '@/hooks/useBnbPrice'
 
 interface WallCardProps {
-  wall: any // Use any temporarily to avoid type errors with avgRating
+  wall: any // Using any to accommodate the dynamic avgRating field
   compact?: boolean
 }
 
 export function WallCard({ wall, compact = false }: WallCardProps) {
+  const { convert } = useBnbPrice()
+  
   const imgSrc = wall.photoCids?.[0]
     ? ipfsImageUrl(wall.photoCids[0])
     : '/placeholder-wall.jpg'
 
-  // Average rating logic (if you add avgRating to your wall fetch later)
+  // Calculate the total daily estimate
+  const dailyBnb = Number(wall.pricePerSqftDay) * (wall.areaSqft || 0)
+
+  // Average rating logic
   const displayRating = wall.avgRating ? `⭐ ${wall.avgRating.toFixed(1)}` : '⭐ New'
 
   return (
@@ -25,6 +31,7 @@ export function WallCard({ wall, compact = false }: WallCardProps) {
       className="group block card hover:border-brand/40 hover:shadow-lg
                  hover:shadow-brand/5 transition-all duration-200 p-0 overflow-hidden"
     >
+      {/* Image Section */}
       <div className={cn('relative overflow-hidden bg-surface-raised', compact ? 'h-32' : 'h-44')}>
         <img
           src={imgSrc}
@@ -52,19 +59,46 @@ export function WallCard({ wall, compact = false }: WallCardProps) {
         )}
       </div>
 
+      {/* Content Section */}
       <div className="p-4">
         <h3 className="font-semibold text-slate-100 truncate group-hover:text-brand transition-colors">
           {wall.title}
         </h3>
+        
         <div className="mt-1 flex items-center gap-1 text-sm text-slate-500">
           <MapPin size={12} className="shrink-0" />
           <span className="truncate">{wall.city}, {wall.country}</span>
         </div>
-        <div className="mt-3 flex items-center justify-between">
-          <div>
-            <span className="text-brand font-bold text-sm">{wall.pricePerSqftDay} BNB</span>
-            <span className="text-slate-600 text-xs"> /sqft/day</span>
+
+        {/* Pricing & USD Estimation */}
+        <div className="mt-4 pt-3 border-t border-surface-border/50 flex items-end justify-between">
+          <div className="space-y-0.5">
+            <div className="flex items-baseline gap-1">
+              <span className="text-brand font-bold text-sm">
+                {wall.pricePerSqftDay} BNB
+              </span>
+              {/* Per Sqft USD translation */}
+              <span className="text-slate-500 text-[9px] font-medium">
+                ({convert(wall.pricePerSqftDay)})
+              </span>
+            </div>
+            <span className="text-slate-600 text-[10px] block">/sqft/day</span>
           </div>
+
+          {/* Daily Total Estimation */}
+          {wall.areaSqft && (
+            <div className="text-right">
+              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">
+                Est. Daily
+              </p>
+              <p className="text-slate-200 font-bold text-xs leading-none">
+                ≈ {dailyBnb.toFixed(5)} BNB
+              </p>
+              <p className="text-brand text-[10px] font-bold mt-1">
+                {convert(dailyBnb)}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </Link>
